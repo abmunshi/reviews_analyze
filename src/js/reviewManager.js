@@ -2,6 +2,7 @@
 
 import TomSelect from "tom-select";
 import { fetchReviews } from "./dataService.js";
+import { openPhotoGallery } from "./photoGallery.js";
 import {
   timeAgo,
   updateActiveSortButton,
@@ -253,6 +254,22 @@ export class ReviewManager {
       ? review.comment.split(" ").slice(0, 10).join(" ") + "..."
       : review.comment;
 
+    // --- Photo Gallery Thumbnails ---
+    let galleryHtml = "";
+    if (Array.isArray(review.images) && review.images.length > 0) {
+      const maxThumbs = 2;
+      const thumbs = review.images.slice(0, maxThumbs);
+      galleryHtml += '<div class="review-gallery">';
+      thumbs.forEach((img, idx) => {
+        galleryHtml += `<img src="${img}" class="review-thumb" data-idx="${idx}" alt="Review photo" />`;
+      });
+      if (review.images.length > maxThumbs) {
+        const moreCount = review.images.length - maxThumbs;
+        galleryHtml += `<div class="review-thumb more-thumb" data-idx="${maxThumbs}">+${moreCount} more</div>`;
+      }
+      galleryHtml += "</div>";
+    }
+
     if (this.compactLayout) {
       reviewEl.innerHTML = `<div class="single-rv style-2" >
     <div class="rv-middle">
@@ -265,7 +282,7 @@ export class ReviewManager {
       )}</span> 
       </div>
       <p class="rv-comment">${displayedComment}</p>
-     
+    ${galleryHtml} 
       ${
         isLongComment
           ? `<a href="#" class="read-more">Read More 
@@ -314,6 +331,7 @@ export class ReviewManager {
       <div class="rating-star">${generateStarRating(review.rating)}</div>
       <span class="hr-bar"></span>
       <p class="rv-comment">${displayedComment}</p>
+        ${galleryHtml} 
       ${
         isLongComment
           ? `<a href="#" class="read-more">Read More 
@@ -340,7 +358,22 @@ export class ReviewManager {
         </div>
       </div>
     </div>
-  </div>`;
+  </div> `;
+    }
+
+    // --- Photo Gallery Click Handlers ---
+    if (Array.isArray(review.images) && review.images.length > 0) {
+      const gallery = reviewEl.querySelector(".review-gallery");
+      if (gallery) {
+        gallery.addEventListener("click", (e) => {
+          let target = e.target;
+          if (target.classList.contains("review-thumb")) {
+            let idx = parseInt(target.getAttribute("data-idx"));
+            if (isNaN(idx)) idx = 0;
+            openPhotoGallery(review.images, idx);
+          }
+        });
+      }
     }
 
     if (isLongComment) {
